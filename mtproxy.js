@@ -191,16 +191,6 @@ const connListener = (socket) => {
 		if (!socket.server_socket) {
 			if (server_idle_cons[socket.dcId].length > 0) {
 
-				const updateServerSocket = (socketInternal) => {
-					socketInternal.server_socket = server_idle_cons[socket.dcId].shift();
-					if (socket.server_socket && !socket.server_socket.writable) {
-						socket.server_socket.destroy();
-					}
-					if (!socket.server_socket || !socket.server_socket.writable) {
-						updateServerSocket(socketInternal);
-					}
-				}
-
 				do {
 					socket.server_socket = server_idle_cons[socket.dcId].shift();
 					if (socket.server_socket && !socket.server_socket.writable) {
