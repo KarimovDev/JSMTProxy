@@ -1,4 +1,4 @@
-const version='1.0.2';
+const version='1.0.3';
 const contributor='KarimovDev';
 const author='FreedomPrevails';
 const github='https://github.com/FreedomPrevails/JSMTProxy';
@@ -8,8 +8,8 @@ const crypto = require('crypto');
 const secret = 'b0cbcef5a486d9636472ac27f8e11a9d';
 const port = 8989;
 
-const CON_TIMEOUT = 3 * 60000;
-const MIN_IDLE_SERVERS = 5;
+const CON_TIMEOUT = 10 * 60000;
+const MIN_IDLE_SERVERS = 6;
 
 const telegram_servers = ["149.154.175.50", "149.154.167.51", "149.154.175.100", "149.154.167.91", "149.154.171.5"];
 const telegram_idle_num = [MIN_IDLE_SERVERS, MIN_IDLE_SERVERS, MIN_IDLE_SERVERS, MIN_IDLE_SERVERS, MIN_IDLE_SERVERS];
@@ -76,9 +76,7 @@ const create_idle_server = (id, ip) => {
 		let packet_enc = client.cipher_enc_server.update(random_buf);
 		random_buf.copy(packet_enc, 0, 0, 56);
 
-		client.write(packet_enc, function() {
-			server_idle_cons[id].push(client);
-		});
+		client.write(packet_enc, () => server_idle_cons[id].push(client));
 	});
 
 	client.on('error', (err) => {
@@ -87,8 +85,8 @@ const create_idle_server = (id, ip) => {
 
 	client.on('data', (data) => {
 		if (client.client_socket.writable) {
-			let dec_packet = client.cipher_dec_server.update(data);
-			let enc_packet = client.client_socket.cipher_enc_client.update(dec_packet);
+			const dec_packet = client.cipher_dec_server.update(data);
+			const enc_packet = client.client_socket.cipher_enc_client.update(dec_packet);
 			client.client_socket.write(enc_packet, () => {
 			});
 		} else {
@@ -130,18 +128,17 @@ const connListener = (socket) => {
 
 	socket.on('data', (data) => {
 
-		if (socket.init == null && (data.length == 41 || data.length == 56)) {
-			const client_ip = socket.remoteAddress.substr(7, socket.remoteAddress.length);
+		if (!socket.init && (data.length == 41 || data.length == 56)) {
 			socket.destroy();
 			return;
 		}
 
-		if (socket.init == null && data.length < 64) {
+		if (!socket.init && data.length < 64) {
 			socket.destroy();
 			return;
 		}
 
-		if (socket.init == null) {
+		if (!socket.init) {
 			let buf64 = Buffer.allocUnsafe(64);
 			data.copy(buf64);
 
@@ -191,7 +188,7 @@ const connListener = (socket) => {
 
 		const payload = socket.cipher_dec_client.update(data);
 
-		if (socket.server_socket == null) {
+		if (!socket.server_socket) {
 			if (server_idle_cons[socket.dcId].length > 0) {
 
 				do {
@@ -199,9 +196,8 @@ const connListener = (socket) => {
 					if (socket.server_socket && !socket.server_socket.writable) {
 						socket.server_socket.destroy();
 					}
-				} while (!socket.server_socket.writable);
+				} while (!socket.server_socket || !socket.server_socket.writable);
 
-				// con_count[socket.dcId]++;
 				socket.server_socket.setTimeout(CON_TIMEOUT);
 				socket.server_socket.setKeepAlive(false);
 				socket.server_socket.client_socket = socket;
@@ -214,8 +210,7 @@ const connListener = (socket) => {
 
 		let enc_payload = socket.server_socket.cipher_enc_server.update(payload);
 		if (socket.server_socket.writable) {
-			socket.server_socket.write(enc_payload, () => {
-			});
+			socket.server_socket.write(enc_payload, () => {});
 		} else {
 			socket.server_socket.destroy();
 			socket.destroy();
@@ -224,6 +219,4 @@ const connListener = (socket) => {
 
 }
 
-net.createServer(connListener).listen(port);
-
-console.log(`mtproxy started on port: ${port}`);
+net.createServer(connListener).listen(port, () => console.log(`MTProxy started on port: ${port}`));
