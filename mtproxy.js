@@ -5,7 +5,7 @@ const github='https://github.com/FreedomPrevails/JSMTProxy';
 
 const net = require('net');
 const crypto = require('crypto');
-const secret = 'b0cbcef5a486d9636472ac27f8e11a9d';
+const secret = 'b0cbcef5a486d9636472ac27f8e11a9d'; // change it to you own secret
 const port = 8989;
 
 const CON_TIMEOUT = 10 * 60000;
